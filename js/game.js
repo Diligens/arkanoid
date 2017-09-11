@@ -7,13 +7,11 @@ function preload() {
 
     game.load.image('bg_space', 'img/space.jpg');
     game.load.spritesheet('paddle', 'img/paddle.png', 250, 50);
-    game.load.image('rabbit', 'img/rabbit.png');
-    game.load.image('ball', 'img/ball.jpg');
+    game.load.atlas('rabbit', 'img/rabbit.png', 'img/rabbit.json');
+    game.load.atlas('ball', 'img/fireball.png', 'img/fireball.json');
 
 
     game.load.audio('ball_hit_paddle', 'sound/ball_hit_paddle.mp3');
-    game.load.audio('game_over', 'sound/game_over.mp3');
-    // game.load.audio('hit_brick', 'sound/hit_brick_2.mp3');
     game.load.audio('rabbit', 'sound/rabbit.mp3');
     game.load.audio('start_ball', 'sound/start_ball.mp3');
     game.load.audio('minus_live', 'sound/minus_live.mp3');
@@ -22,10 +20,17 @@ function preload() {
 
 var ball;
 var paddle;
-var bricks;
-var rabbit;
+var rabbits;
+
+
+// === For keyboard controlls
+// var rectangle;
+// var graphics;
+// var controllText;
+
 
 var ballOnPaddle = true;
+var ballOnPaddlePosition = 20;
 
 var lives = 3;
 var score = 0;
@@ -36,53 +41,51 @@ var introText;
 
 var s;
 
-var anim;
+var animPaddle;
+var animFireball;
+var animGhostRabbit
 
 var cursors;
 var left;
 var right;
 
-var sound_ball_hit_paddle;
-var game_over;
-var hit_brick;
-var start_ball;
-var minus_live;
+var soundBallHitPaddle;
+var soundStartBall;
+var soundMinusLive;
+var soundRabbit;
 
 function create() {
 
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
-    //  We check bounds collisions against all walls other than the bottom one
+
     game.physics.arcade.checkCollision.down = false;
 
     s = game.add.tileSprite(0, 0, 1350, 700, 'bg_space');
 
-    //  The bricks group contains bricks, we can crash them
-    bricks = game.add.group();
+    rabbits = game.add.group();
 
-    // We will enable physics for any object that is created in this group
-    bricks.enableBody = true;
-    bricks.physicsBodyType = Phaser.Physics.ARCADE;
+    rabbits.enableBody = true;
+    rabbits.physicsBodyType = Phaser.Physics.ARCADE;
 
-    var brick;
+    var rabbit;
 
-    for (var y = 0; y < 2; y++) // y - number of rows (max - 4)
+    for (var y = 0; y < 3; y++)
     {
-        for (var x = 0; x < 5; x++) // x - blocks number in rows
+        for (var x = 0; x < 8; x++) 
         {
-                brick = bricks.create(140 + (x * 190), 50 + (y * 190), 'rabbit');
-                brick.scale.set(0.6);
-                brick.body.immovable = true;
+                rabbit = rabbits.create(200 + (x * 100), 50 + (y * 150), 'rabbit');
+                rabbit.scale.set(0.2);
+                rabbit.body.immovable = true;
+
         }
     }
 
     paddle = game.add.sprite(game.world.centerX, 650, 'paddle', 0);
     paddle.smoothed = false;
     paddle.anchor.setTo(0.4, 0);
-    paddle.scale.set(2, 2);
-    anim = paddle.animations.add('hit');
-    
-
+    paddle.scale.set(2, 1);
+    animPaddle = paddle.animations.add('hit');
 
     game.physics.enable(paddle, Phaser.Physics.ARCADE);
 
@@ -90,62 +93,89 @@ function create() {
     paddle.body.bounce.set(1);
     paddle.body.immovable = true;
 
-    ball = game.add.sprite(100, paddle.y - 100, 'ball');
+    
+    ball = game.add.sprite(100, paddle.y - ballOnPaddlePosition, 'ball');
     ball.anchor.set(0);
     ball.checkWorldBounds = true;
-
+    ball.animations.add('fire');
+    ball.play('fire', 14, true);
 
     game.physics.enable(ball, Phaser.Physics.ARCADE);
 
 
     ball.body.collideWorldBounds = true;
     ball.body.bounce.set(1);
-    // ball.scale.set(0.5);
+    ball.scale.set(0.5);
+    ball.anchor.setTo(0.5, 0.5);
     ball.events.onOutOfBounds.add(ballLost, this);
 
     scoreText = game.add.text(40, 760, 'score: 0', { font: "30px Roboto", fill: "#ffffff", align: "left" });
     livesText = game.add.text(1000, 760, 'lives: 3', { font: "30px Roboto", fill: "#ffffff", align: "left" });
-    introText = game.add.text(game.world.centerX, 400, '- click to start -', { font: "40px Calibri", fill: "#ffffff", align: "center" });
+    introText = game.add.text(game.world.centerX, 500, '- click to start -', { font: "40px Calibri", fill: "#ffffff", align: "center" });
     introText.anchor.setTo(0.5, 0.5);
 
     game.input.onDown.add(releaseBall, this);
 
     
-    sound_ball_hit_paddle = game.add.audio('ball_hit_paddle');
-    game_over = game.add.audio('game_over');
-    // hit_brick = game.add.audio('hit_brick');
-    rabbit = game.add.audio('rabbit');
-    start_ball = game.add.audio('start_ball');
-    minus_live = game.add.audio('minus_live');
+    soundBallHitPaddle = game.add.audio('ball_hit_paddle');
+    soundRabbit = game.add.audio('rabbit');
+    soundStartBall = game.add.audio('start_ball');
+    soundMinusLive = game.add.audio('minus_live');
 
     cursors = game.input.keyboard.createCursorKeys();
+  
+    // === For keyboard controlls
+
+    // controllText = game.add.text(450, 760, 'controll', { font: "30px Roboto", fill: "#ffffff", align: "left" });
+    // rectangle = new Phaser.Polygon();
+    // rectangle.setTo([ new Phaser.Point(550, 720), new Phaser.Point(620, 720), new Phaser.Point(620, 760), new Phaser.Point(550, 760)]);
+
+    // graphics = game.add.graphics(0, 0);
+
+    // graphics.beginFill(0xFF33ff);
+    // graphics.drawPolygon(rectangle.points);
+    // graphics.endFill();
 }
 
 var keyboardControll = false;
 
-function update (input_x) {
+// === For keyboard controlls
+
+// function controllChange() {
+
+//     if (keyboardControll = false) {
+//         keyboardControll = true;
+//     } else {
+//         keyboardControll = false;
+//     }
+    
+// }
+
+function update () {
+
+    ball.angle += 0.3;
 
     if (ballOnPaddle)
     {
-        ball.body.x = paddle.x;
+        ball.body.x = paddle.x + 10;
     }
     else
     {
         game.physics.arcade.collide(ball, paddle, ballHitPaddle, null, this);
-        game.physics.arcade.collide(ball, bricks, ballHitBrick, null, this);
+        game.physics.arcade.collide(ball, rabbits, ballHitRabbit, null, this);
     }        
 
         // mouse control
         if (keyboardControll == false) {
             paddle.x = game.input.x;
 
-            if (paddle.x < 200)
+            if (paddle.x < 0)
             {
-                paddle.x = 200;
+                paddle.x = 0;
             }
-            else if (paddle.x > game.width - 300)
+            else if (paddle.x > game.width - 100)
             {
-                paddle.x = game.width - 300;
+                paddle.x = game.width - 100;
             }
         }
 
@@ -181,30 +211,31 @@ function releaseBall () {
     if (ballOnPaddle)
     {
         ballOnPaddle = false;
-        ball.body.velocity.y = -500;
+        ball.body.velocity.y = -450;
         ball.body.velocity.x = -355;
         introText.visible = false;
-        start_ball.play();
+        soundStartBall.play();
     }
 
 }
 
 function ballLost () {
 
-    lives--;
+    if (lives >= 0) {
+        lives--;
+    }
     livesText.text = 'lives: ' + lives;
-    minus_live.play();
+    soundMinusLive.play();
 
-    if (lives === 0)
+    if (lives < 1)
     {
         gameOver();
-        game_over.play(); 
     }
     else
     {
         ballOnPaddle = true;
 
-        ball.reset(paddle.body.x - 100, paddle.y - 100);
+        ball.reset(paddle.body.x - ballOnPaddlePosition, paddle.y - ballOnPaddlePosition);
         
     }
 
@@ -219,34 +250,52 @@ function gameOver () {
 
 }
 
-function ballHitBrick (_ball, _brick) {
+function ballHitRabbit (_ball, _rabbit) {
 
-    _brick.kill();
-    // hit_brick.play();
-    rabbit.play();
 
-    score += 10;
+    var ghostRabbit = game.add.sprite(_rabbit.x, _rabbit.y, 'rabbit');
+    ghostRabbit.anchor.set(0);
+    ghostRabbit.scale.set(0.2);
 
-    scoreText.text = 'score: ' + score;
+    animGhostRabbit = ghostRabbit.animations.add('kill');
+    animGhostRabbit.play(60, false);
 
-    //  Are they any bricks left?
-    if (bricks.countLiving() == 0)
+    setTimeout(function(){
+        ghostRabbit.kill();
+    },350);
+
+    soundRabbit.play();
+
+
+
+        _rabbit.kill();
+        score += 10;
+
+        scoreText.text = 'score: ' + score;
+
+
+    if (rabbits.countLiving() == 0)
     {
-        //  New level starts
+
         score += 100;
         scoreText.text = 'score: ' + score;
         introText.text = '- Next Level -';
-
-        //  Let's move the ball back to the paddle
         
         ball.x = paddle.body.x + 100;
-        ball.y = paddle.body.y - 100;
+        ball.y = paddle.body.y - ballOnPaddlePosition;
         ballOnPaddle = true;
         ball.body.velocity.set(0);
 
-        //  And bring the bricks back from the dead 
-        bricks.callAll('revive');
+        setTimeout(function(){
+            rabbits.callAll('revive');
+        },500);
+
     }
+
+
+        
+
+
 
 }
 
@@ -256,26 +305,22 @@ function ballHitPaddle (_ball, _paddle) {
 
     if (_ball.x < _paddle.x)
     {
-        //  Ball is on the left-hand side of the paddle
         diff = _paddle.x - _ball.x;
         _ball.body.velocity.x = (-10 * diff);
     }
     else if (_ball.x > _paddle.x)
     {
-        //  Ball is on the right-hand side of the paddle
         diff = _ball.x -_paddle.x;
         _ball.body.velocity.x = (10 * diff);
     }
     else
     {
-        //  Ball is perfectly in the middle
-        //  Add a little random X to stop it bouncing straight up!
         _ball.body.velocity.x = 2 + Math.random() * 8;
     }
 
-    anim.play(30, false);
+    animPaddle.play(30, false);
 
-    sound_ball_hit_paddle.play();
+    soundBallHitPaddle.play();
 
 }
 
