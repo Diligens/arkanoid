@@ -74,7 +74,7 @@ function create() {
     {
         for (var x = 0; x < 8; x++) 
         {
-                rabbit = rabbits.create(200 + (x * 100), 50 + (y * 150), 'rabbit');
+                rabbit = rabbits.create(200 + (x * 100), 70 + (y * 150), 'rabbit');
                 rabbit.scale.set(0.2);
                 rabbit.body.immovable = true;
 
@@ -105,7 +105,7 @@ function create() {
 
     ball.body.collideWorldBounds = true;
     ball.body.bounce.set(1);
-    ball.scale.set(0.5);
+    ball.scale.set(0.4);
     ball.anchor.setTo(0.5, 0.5);
     ball.events.onOutOfBounds.add(ballLost, this);
 
@@ -221,11 +221,12 @@ function releaseBall () {
 
 function ballLost () {
 
-    if (lives >= 0) {
+    ball.kill();
+    // if (lives >= 0) {
         lives--;
-    }
-    livesText.text = 'lives: ' + lives;
-    soundMinusLive.play();
+        livesText.text = 'lives: ' + lives;
+        soundMinusLive.play();
+    // }
 
     if (lives < 1)
     {
